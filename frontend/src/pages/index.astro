@@ -1,0 +1,190 @@
+---
+
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Astro</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>My Chat App</h1>
+      <form class="message-form" action="">
+        <input
+          type="text"
+          id="usernameInput"
+          placeholder="Enter your username"
+        />
+        <input type="text" id="messageInput" placeholder="Enter your message" />
+        <button type="submit">Send message</button>
+      </form>
+
+      <h2>Messages</h2>
+      <ul class="messages"></ul>
+    </div>
+
+    <script type="module">
+      import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
+
+      const messagesArea = document.querySelector(".messages");
+
+      const socket = io("http://localhost:3000"); // Socket backend url
+
+      // Send message
+      const messageForm = document.querySelector(".message-form");
+      messageForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const usernameInput = messageForm
+          .querySelector("#usernameInput")
+          .value.trim();
+        const messageInput = messageForm.querySelector("#messageInput");
+        socket.emit("sendMessage", {
+          username: usernameInput,
+          message: messageInput.value.trim(),
+        }); // Send message to server
+        messageInput.value = "";
+      });
+
+      // Get all messages when connected
+      socket.emit("getAllMessages");
+
+      // Listen for all messages from the server
+      socket.on("allMessages", (messages) => {
+        messages.forEach((message) => {
+          displayMessage(message);
+        });
+      });
+
+      // Listen for any messages from the server
+      socket.on("newMessage", (data) => {
+        displayMessage(data);
+      });
+
+      function formatDate(dateString) {
+        const date = new Date(dateString);
+        const hours = date.getHours().toString().padStart(2, "0");
+        const minutes = date.getMinutes().toString().padStart(2, "0");
+        return `${hours}:${minutes}`;
+      }
+
+      function displayMessage(data) {
+        console.log(data.username);
+        console.log(data.message);
+        console.log(formatDate(data.createdAt));
+        const li = document.createElement("li");
+        li.className = "message-item";
+        li.innerHTML = `
+		<div class="message-container">
+			<div class="message-header">
+			<span class="username">${data.username}</span>
+			<span class="timestamp">${formatDate(data.createdAt)}</span>
+			<span class="message-content">${data.message}</span>
+			</div>
+		</div>
+	  `;
+        messagesArea.appendChild(li);
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+      }
+    </script>
+    <style>
+      .messages {
+        height: 400px;
+        overflow-y: auto;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 16px 0;
+        background-color: #f8f9fa;
+      }
+
+      .message-item {
+        margin: 12px 0;
+        padding: 8px 12px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        list-style: none;
+      }
+
+      .message-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+      }
+
+      .username {
+        font-weight: bold;
+        color: #2c3e50;
+      }
+
+      .timestamp {
+        font-size: 0.8em;
+        color: #666;
+      }
+
+      .message-content {
+        color: #2c3e50;
+        line-height: 1.4;
+        word-break: break-word;
+      }
+
+      /* フォームのスタイリングも改善 */
+      .message-form {
+        display: flex;
+        gap: 8px;
+        margin: 16px 0;
+      }
+
+      input {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      #usernameInput {
+        width: 150px;
+      }
+
+      #messageInput {
+        flex-grow: 1;
+      }
+
+      button {
+        padding: 8px 16px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      /* コンテナのスタイリング */
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      h1 {
+        color: #2c3e50;
+        margin-bottom: 24px;
+      }
+
+      h2 {
+        color: #34495e;
+        margin: 16px 0;
+      }
+    </style>
+  </body>
+</html>
